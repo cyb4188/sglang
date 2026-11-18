@@ -1,0 +1,14 @@
+{
+  "python": "3.12.16",
+  "torch": "2.14.1+cu130",
+  "cuda_runtime": "13.0",
+  "flashinfer_python": "0.7.4",
+  "sglang_kernel": "0.4.11",
+  "transformers": "5.19.0",
+  "base_commit": "0f1509829b3920780aaea05bfc72b33db350a2e8",
+  "feature_commit": "d49c028f0077ca2978a682a54dc9a28efd4543de",
+  "tree_sha": "622403fda69e38539aa09be04f304ee33dd5b625",
+  "gpu": "NVIDIA RTX 6000 Ada Generation 48 GB",
+  "driver": "595.80",
+  "optional_rust_extensions": "disabled (SGLANG_BUILD_RUST_EXTS=none)"
+}

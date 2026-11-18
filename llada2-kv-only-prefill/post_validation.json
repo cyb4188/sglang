@@ -1,0 +1,21 @@
+{
+  "cpu_tests": [
+    {
+      "test": "test/registered/unit/dllm/test_kv_only_prefill.py",
+      "CUDA_VISIBLE_DEVICES": "999",
+      "returncode": 0
+    },
+    {
+      "test": "test/registered/unit/dllm/test_low_confidence_prefill.py",
+      "CUDA_VISIBLE_DEVICES": "999",
+      "returncode": 0
+    },
+    {
+      "test": "test/registered/unit/models/test_llada2.py",
+      "CUDA_VISIBLE_DEVICES": "999",
+      "returncode": 0
+    }
+  ],
+  "visible_cuda_devices": 0,
+  "reconstructed_token_id_matches": 128
+}

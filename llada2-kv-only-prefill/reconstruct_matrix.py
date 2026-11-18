@@ -14,25 +14,65 @@ def digest(path):
     return value.hexdigest()
 
 
+def json_rows(path):
+    """Stream the large top-level JSON arrays without retaining the full file."""
+    decoder = json.JSONDecoder()
+    with path.open(encoding="utf-8") as stream:
+        buffer = stream.read(1024 * 1024).lstrip()
+        if not buffer.startswith("["):
+            raise ValueError(f"Expected a JSON array: {path}")
+        position = 1
+        while True:
+            while position < len(buffer) and buffer[position] in " \t\r\n,":
+                position += 1
+            if position < len(buffer) and buffer[position] == "]":
+                return
+            try:
+                row, end = decoder.raw_decode(buffer, position)
+            except json.JSONDecodeError:
+                chunk = stream.read(1024 * 1024)
+                if not chunk:
+                    raise
+                buffer = buffer[position:] + chunk
+                position = 0
+                continue
+            yield row
+            position = end
+
+
 def load_messages(source_dir, selected):
     import pyarrow.parquet as pq
 
     messages = {}
     roles = {"human": "user", "gpt": "assistant", "system": "system"}
-    for dataset, filename in (("ShareGPT", "sharegpt.json"),
-                              ("OpenHermes", "openhermes_all.json")):
-        rows = json.loads((source_dir / filename).read_text(encoding="utf-8"))
-        by_id = {row["id"]: row for row in rows} if dataset == "ShareGPT" else None
+    for dataset, filename in (
+        ("ShareGPT", "sharegpt.json"),
+        ("OpenHermes", "openhermes_all.json"),
+    ):
+        wanted = {}
         for item in selected:
             if item["dataset"] != dataset:
                 continue
             uid, turn = item["uid"].removeprefix("raw/").rsplit("/turn", 1)
-            row = by_id[uid] if by_id is not None else rows[int(uid)]
-            messages[dataset, item["uid"]] = [
-                {"role": roles[m["from"]], "content": m["value"]}
-                for m in row["conversations"][:int(turn) + 1]
-            ]
-        del rows, by_id
+            wanted.setdefault(uid, []).append((item["uid"], int(turn)))
+        found = set()
+        for index, row in enumerate(json_rows(source_dir / filename)):
+            uid = row["id"] if dataset == "ShareGPT" else str(index)
+            matches = wanted.get(uid, [])
+            if matches:
+                found.add(uid)
+            for original_uid, turn in matches:
+                messages[dataset, original_uid] = [
+                    {"role": roles[m["from"]], "content": m["value"]}
+                    for m in row["conversations"][: turn + 1]
+                ]
+            # ShareGPT contains duplicate IDs. Match the last source record,
+            # as in the original experiment's source-verification dictionary.
+            if dataset != "ShareGPT" and len(found) == len(wanted):
+                break
+        missing = wanted.keys() - found
+        if missing:
+            raise ValueError(f"Missing source records in {filename}: {sorted(missing)}")
     wanted = {item["uid"] for item in selected if item["dataset"] == "OpenOrca"}
     for batch in pq.ParquetFile(source_dir / "openorca.parquet").iter_batches(
         columns=["id", "system_prompt", "question"]
@@ -41,7 +81,9 @@ def load_messages(source_dir, selected):
             if row["id"] in wanted:
                 conversation = []
                 if row["system_prompt"]:
-                    conversation.append({"role": "system", "content": row["system_prompt"]})
+                    conversation.append(
+                        {"role": "system", "content": row["system_prompt"]}
+                    )
                 conversation.append({"role": "user", "content": row["question"]})
                 messages["OpenOrca", row["id"]] = conversation
     wild = [item for item in selected if item["dataset"] == "WildChat"]
@@ -57,7 +99,7 @@ def load_messages(source_dir, selected):
         uid, turn = item["uid"].rsplit("/turn", 1)
         messages["WildChat", item["uid"]] = [
             {"role": m["role"], "content": m["content"]}
-            for m in rows[int(uid)]["conversation"][:int(turn) + 1]
+            for m in rows[int(uid)]["conversation"][: int(turn) + 1]
         ]
     return messages
 
@@ -69,7 +111,10 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parent
-    selected = [json.loads(line) for line in (root / "matrix_source_manifest.jsonl").read_text().splitlines()]
+    selected = [
+        json.loads(line)
+        for line in (root / "matrix_source_manifest.jsonl").read_text().splitlines()
+    ]
     sources = json.loads((root / "source_files.json").read_text())
     for source in sources.values():
         if digest(args.source_dir / source["filename"]) != source["sha256"]:
@@ -80,12 +125,21 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     with args.output.open("w", encoding="utf-8") as output:
         for item in selected:
-            ids = tokenizer.apply_chat_template(messages[item["dataset"], item["uid"]],
-                                                tokenize=True, add_generation_prompt=True)
+            ids = tokenizer.apply_chat_template(
+                messages[item["dataset"], item["uid"]],
+                tokenize=True,
+                add_generation_prompt=True,
+            )
             if not isinstance(ids, list):
                 ids = ids["input_ids"]
-            if len(ids) != item["input_len"] or hashlib.sha256(json.dumps(ids).encode()).hexdigest() != item["input_sha"]:
-                raise ValueError(f"Tokenization mismatch: {item['dataset']}/{item['uid']}")
+            if (
+                len(ids) != item["input_len"]
+                or hashlib.sha256(json.dumps(ids).encode()).hexdigest()
+                != item["input_sha"]
+            ):
+                raise ValueError(
+                    f"Tokenization mismatch: {item['dataset']}/{item['uid']}"
+                )
             output.write(json.dumps(dict(item, input_ids=ids)) + "\n")
     print(f"Reconstructed and verified {len(selected)} inputs")
 

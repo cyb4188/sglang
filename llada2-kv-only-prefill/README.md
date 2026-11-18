@@ -10,6 +10,34 @@ The submitted change is based on upstream `0f1509829b3920780aaea05bfc72b33db350a
 
 Both experiments use LLaDA2.0-mini on one RTX 6000 Ada 48 GB, BF16, LowConfidence/FDFO with 32-token blocks, FlashInfer attention, and Triton MoE. Model/config/tokenizer fingerprints are in `model_fingerprints.json`. Comparisons are within each software/hardware environment; do not compare absolute times across the two environments.
 
+## Mainline results
+
+**Mainline controlled rerun completed.** The three arms are A: unmodified upstream `0f150982`; B: this feature head with the opt-in disabled, retaining #48647's full-forward behavior; and C: the same head with the opt-in enabled. B therefore includes the disabled-path guards; B/C is a feature-on/off ablation.
+
+The run uses natural lengths 1024–1053 and 4096–4127, batch 1/4, 16 full source prompts per bin (four each from ShareGPT, WildChat, OpenHermes, and OpenOrca), and two fresh-process orders A-B-C / C-B-A. Each table entry averages 16 prompts × 2 repetitions. All 384 requests completed; 128 three-arm pairs and the cross-round comparisons have identical output token-ID hashes (42,674 output token positions per arm). No external compute PID was sampled during any arm; the maximum sampling gap was 1.152 seconds.
+
+First-text latency:
+
+| Input bin | Batch | A mean (ms) | B mean (ms) | C mean (ms) | C vs B reduction |
+|---:|---:|---:|---:|---:|---:|
+| 1024 | 1 | 714.64 | 643.87 | 597.73 | 7.17% |
+| 1024 | 4 | 1315.51 | 1190.88 | 1117.80 | 6.14% |
+| 4096 | 1 | 2348.69 | 1956.97 | 1776.15 | 9.24% |
+| 4096 | 4 | 4770.19 | 3832.14 | 3550.38 | 7.35% |
+
+End-to-end latency:
+
+| Input bin | Batch | A mean (ms) | B mean (ms) | C mean (ms) | C vs B reduction |
+|---:|---:|---:|---:|---:|---:|
+| 1024 | 1 | 4366.16 | 4309.54 | 4262.28 | 1.10% |
+| 1024 | 4 | 7755.02 | 7635.94 | 7568.40 | 0.88% |
+| 4096 | 1 | 5952.06 | 5560.60 | 5398.81 | 2.91% |
+| 4096 | 4 | 9874.29 | 8938.40 | 8673.91 | 2.96% |
+
+At 4096, the two individual runs reduced first-text time by 9.17–9.31% (batch 1) and 7.34–7.37% (batch 4); end-to-end reductions were 2.88–2.94% and 2.92–3.00%. This is a small, two-repetition single-device study, not a statistical-significance claim. 44 of 128 requests per arm reached the 512-token cap. The three full classic datasets below were not rerun on this mainline head.
+
+[Measurements, source IDs/hashes, exact configuration, and reproduction scripts](https://github.com/cyb4188/sglang/tree/bench/llada2-kv-only-prefill/llada2-kv-only-prefill).
+
 ## Legacy full experiment
 
 `legacy_latency.csv` contains all three arms' aggregate first-text and end-to-end latencies, in milliseconds. A is the original 0.5.17 implementation, B backports #48647, and C additionally skips the final FFN/MoE, output norm, and LM head, with a separate CUDA Graph variant. Its server parameters are in `legacy_server_config.json`.
@@ -32,7 +60,7 @@ python reconstruct_matrix.py --source-dir SOURCE_DIR \
   --model MODEL_PATH --output matrix_inputs.jsonl
 ```
 
-The script uses Transformers and PyArrow, verifies source hashes, applies the model's chat template to each complete selected conversation, and checks the actual token count and token-ID hash. ShareGPT uses conversation IDs; OpenHermes and WildChat use zero-based source row indices; OpenOrca uses its `id` column. `/turnN` includes all conversation entries through index N. The script reads the JSON sources in memory.
+The script uses Transformers and PyArrow, verifies source hashes, applies the model's chat template to each complete selected conversation, and checks the actual token count and token-ID hash. ShareGPT uses conversation IDs (the last source record wins for duplicate IDs, matching the original verification); OpenHermes and WildChat use zero-based source row indices; OpenOrca uses its `id` column. `/turnN` includes all conversation entries through index N. It streams the large JSON source arrays.
 
 For the full sets, the prototype used each GSM8K `question` as one user message, each HumanEval `prompt` as one user message, and the official MBPP test split with this user prompt:
 
@@ -57,4 +85,23 @@ python benchmark/dllm/bench_kv_only_prefill.py \
   --output results.jsonl
 ```
 
-Run against separate servers with the opt-in set to 0 (B) and 1 (C). A uses the unmodified base commit. Keep all other server arguments identical and keep the GPU free of unrelated workloads. The mainline report and exact launch arguments will be added after the two ordered repetitions finish.
+Run against separate servers with the opt-in set to 0 (B) and 1 (C). B and C use the same feature head: B retains #48647's full-forward behavior with the new early exits disabled. Thus this is a feature-on/off ablation; B includes the disabled-path guard overhead. A uses the unmodified base commit. Keep all other server arguments identical and keep the GPU free of unrelated workloads.
+
+`run_mainline.py` runs the controlled two-round comparison. Its orders are A-B-C and C-B-A, each in fresh server processes. For every input-bin/batch-size cohort it runs two warmup batches with the same 512-token cap before measuring the 16 selected requests. This differs from the standalone client's shorter 32-token warmup. Monitoring samples GPU process ownership about once per second throughout each arm and rejects an arm if any external compute PID is observed.
+
+Prepare a Python 3.12 environment with the feature checkout's pinned dependencies. The recorded environment disables the optional Rust extensions (`SGLANG_BUILD_RUST_EXTS=none`). From a checkout containing both commits:
+
+```bash
+export BENCH_WORKSPACE=/path/to/new/benchmark-workspace
+export MODEL_PATH=/path/to/local/LLaDA2.0-mini
+export CUDA_HOME=/usr/local/cuda-13.1
+mkdir -p "$BENCH_WORKSPACE/tmp"
+git worktree add --detach "$BENCH_WORKSPACE/source_a" 0f1509829b3920780aaea05bfc72b33db350a2e8
+git worktree add --detach "$BENCH_WORKSPACE/source_lf" d49c028f0077ca2978a682a54dc9a28efd4543de
+python reconstruct_matrix.py --source-dir SOURCE_DIR --model "$MODEL_PATH" \
+  --output "$BENCH_WORKSPACE/matrix_manifest.jsonl"
+python run_mainline.py
+python summarize_mainline.py
+```
+
+The driver sets `PYTHONPATH` to the appropriate checkout for each server and writes individual measurements and launch arguments below `BENCH_WORKSPACE/mainline_results`. It uses a local checkpoint in offline mode, seed 42, context 8192, total KV token budget 24576, maximum running requests 4, chunked/max prefill 512, static memory fraction 0.8, and decode graph batch sizes 1/2/3/4. The complete server argument list is in the driver. This configuration differs from the legacy prototype; compare arms within one environment only.

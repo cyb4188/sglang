@@ -22,7 +22,9 @@ spec = importlib.util.spec_from_file_location(
 )
 bench = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bench)
-records = [json.loads(s) for s in (ROOT / "matrix_manifest.jsonl").read_text().splitlines()]
+records = [
+    json.loads(s) for s in (ROOT / "matrix_manifest.jsonl").read_text().splitlines()
+]
 
 
 def gpu_pids():
@@ -61,22 +63,54 @@ def run_arm(repeat, arm):
         TVM_FFI_CACHE_DIR=str(ROOT / "tvm_ffi"),
     )
     args = [
-        sys.executable, "-m", "sglang.launch_server",
-        "--model-path", os.environ["MODEL_PATH"],
-        "--host", "127.0.0.1", "--port", "31373",
-        "--trust-remote-code", "--dtype", "bfloat16", "--tp-size", "1",
-        "--mem-fraction-static", "0.8", "--context-length", "8192",
-        "--max-total-tokens", "24576", "--max-running-requests", "4",
-        "--chunked-prefill-size", "512", "--max-prefill-tokens", "512",
-        "--attention-backend", "flashinfer", "--moe-runner-backend", "triton",
-        "--dllm-algorithm", "LowConfidence", "--dllm-fdfo",
-        "--cuda-graph-bs-decode", "1", "2", "3", "4",
-        "--random-seed", "42", "--log-level", "warning",
+        sys.executable,
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        os.environ["MODEL_PATH"],
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "31373",
+        "--trust-remote-code",
+        "--dtype",
+        "bfloat16",
+        "--tp-size",
+        "1",
+        "--mem-fraction-static",
+        "0.8",
+        "--context-length",
+        "8192",
+        "--max-total-tokens",
+        "24576",
+        "--max-running-requests",
+        "4",
+        "--chunked-prefill-size",
+        "512",
+        "--max-prefill-tokens",
+        "512",
+        "--attention-backend",
+        "flashinfer",
+        "--moe-runner-backend",
+        "triton",
+        "--dllm-algorithm",
+        "LowConfidence",
+        "--dllm-fdfo",
+        "--cuda-graph-bs-decode",
+        "1",
+        "2",
+        "3",
+        "4",
+        "--random-seed",
+        "42",
+        "--log-level",
+        "warning",
     ]
     (OUT / f"r{repeat}_{arm}_command.json").write_text(json.dumps(args, indent=2))
     with (OUT / f"r{repeat}_{arm}_server.log").open("w") as log:
-        process = subprocess.Popen(args, cwd=source, env=env, stdout=log, stderr=log,
-                                   start_new_session=True)
+        process = subprocess.Popen(
+            args, cwd=source, env=env, stdout=log, stderr=log, start_new_session=True
+        )
         stop = threading.Event()
         contaminated = threading.Event()
         guard_error = []
@@ -86,13 +120,23 @@ def run_arm(repeat, arm):
                 while not stop.is_set():
                     try:
                         own = {process.pid} | {
-                            p.pid for p in psutil.Process(process.pid).children(recursive=True)
+                            p.pid
+                            for p in psutil.Process(process.pid).children(
+                                recursive=True
+                            )
                         }
                         pids = gpu_pids()
                         foreign = pids - own
-                        output.write(json.dumps({"monotonic": time.monotonic(),
-                                                 "gpu_pids": sorted(pids),
-                                                 "foreign": sorted(foreign)}) + "\n")
+                        output.write(
+                            json.dumps(
+                                {
+                                    "monotonic": time.monotonic(),
+                                    "gpu_pids": sorted(pids),
+                                    "foreign": sorted(foreign),
+                                }
+                            )
+                            + "\n"
+                        )
                         output.flush()
                         if foreign:
                             contaminated.set()
@@ -128,15 +172,29 @@ def run_arm(repeat, arm):
                         with path.open("w") as output:
                             for offset in range(0, len(selected), batch_size):
                                 if contaminated.is_set():
-                                    raise RuntimeError(f"GPU sample invalid: {guard_error}")
-                                rows = bench.measure(session, URL,
-                                                     selected[offset:offset + batch_size], 512, 360)
+                                    raise RuntimeError(
+                                        f"GPU sample invalid: {guard_error}"
+                                    )
+                                rows = bench.measure(
+                                    session,
+                                    URL,
+                                    selected[offset : offset + batch_size],
+                                    512,
+                                    360,
+                                )
                                 for row in rows:
-                                    row.update(arm=arm, repeat=repeat, batch_size=batch_size,
-                                               nominal_tokens=length)
+                                    row.update(
+                                        arm=arm,
+                                        repeat=repeat,
+                                        batch_size=batch_size,
+                                        nominal_tokens=length,
+                                    )
                                     output.write(json.dumps(row) + "\n")
                                 output.flush()
-                        print(f"Completed repeat={repeat} arm={arm} tokens={length} batch={batch_size}", flush=True)
+                        print(
+                            f"Completed repeat={repeat} arm={arm} tokens={length} batch={batch_size}",
+                            flush=True,
+                        )
                 time.sleep(1.2)
                 if contaminated.is_set():
                     raise RuntimeError(f"GPU sample invalid: {guard_error}")
