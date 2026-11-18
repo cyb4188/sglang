@@ -1,0 +1,31 @@
+{
+  "source_tree": "622403fda69e38539aa09be04f304ee33dd5b625",
+  "tests": [
+    {
+      "command": "python test/registered/unit/dllm/test_kv_only_prefill.py -v",
+      "result": "8 passed"
+    },
+    {
+      "command": "python test/registered/unit/dllm/test_low_confidence_prefill.py -v",
+      "result": "3 passed"
+    },
+    {
+      "command": "python test/registered/unit/models/test_llada2.py -v",
+      "result": "14 passed"
+    },
+    {
+      "command": "SGLANG_TEST_LLADA2_MODEL=MODEL_PATH python test/registered/dllm/test_dllm_kv_only_prefill.py -v",
+      "result": "1 passed; four server configurations; 340.547 seconds"
+    },
+    {
+      "command": "git diff --name-only 0f1509829b3920780aaea05bfc72b33db350a2e8 HEAD | xargs pre-commit run --hook-stage pre-commit --files",
+      "result": "all applicable hooks passed on Linux"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "ci": "Initially skipped: draft PR and missing run-ci label. Repository CI requires maintainer authorization; no remote GPU CI pass is claimed.",
+  "accuracy_scope": "Token equivalence; no task accuracy or pass@1 evaluation."
+}

@@ -1,0 +1,7 @@
+{
+  "model": "inclusionAI/LLaDA2.0-mini",
+  "config_sha256": "6b1db3737e1d173a0326cd0bb740d7ae81515f5ea9468903fa008dadca9cffde",
+  "tokenizer_sha256": "0a1db22fe3dfb28f9b2be6d87f472af371b50235d7f5366ecac14b52ff8c002b",
+  "chat_template": "apply_chat_template(messages, tokenize=True, add_generation_prompt=True)",
+  "hash_encoding": "sha256(json.dumps(input_ids).encode())"
+}

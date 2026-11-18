@@ -1,0 +1,29 @@
+{
+  "completed_logical_requests": 12666,
+  "paired_triplets": 4222,
+  "token_positions_compared_per_arm": 1353551,
+  "excluded_preliminary_records": [
+    [
+      "A",
+      "matrix-32-b1-0"
+    ],
+    [
+      "A",
+      "matrix-32-b1-1"
+    ],
+    [
+      "A",
+      "matrix-32-b1-2"
+    ],
+    [
+      "A",
+      "matrix-32-b1-3"
+    ]
+  ],
+  "source_prompt_verifications": 128,
+  "max_gpu_sample_start_gap_seconds": 1.0421671867370605,
+  "all_expected_ids_present": true,
+  "all_input_hashes_match": true,
+  "all_paired_output_token_ids_equal": true,
+  "gpu_samples_bracket_every_accepted_request": true
+}

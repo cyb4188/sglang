@@ -1,0 +1,22 @@
+{
+  "ShareGPT": {
+    "filename": "sharegpt.json",
+    "url": "https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered/resolve/d0b3d00ce89feef10007c44035ed3bf2d0992c74/ShareGPT_V3_unfiltered_cleaned_split.json",
+    "sha256": "35f0e213ce091ed9b9af2a1f0755e9d39f9ccec34ab281cd4ca60d70f6479ba4"
+  },
+  "OpenHermes": {
+    "filename": "openhermes_all.json",
+    "url": "https://huggingface.co/datasets/teknium/OpenHermes-2.5/resolve/b82037821055c377bed0d495e72e46de3bc72e84/openhermes2_5.json",
+    "sha256": "abe573d17eade4161aac321028027dd5ba614a6d9516d51bde9299d5353e1609"
+  },
+  "OpenOrca": {
+    "filename": "openorca.parquet",
+    "url": "https://huggingface.co/datasets/Open-Orca/OpenOrca/resolve/e9c87b4abb2609913751f9b26553fdb9c061796c/1M-GPT4-Augmented.parquet",
+    "sha256": "8d3f4a6e5980a5f163ca22be60336f8b47796d43836d984569f857ec56aadfd8"
+  },
+  "WildChat": {
+    "filename": "wildchat.parquet",
+    "url": "https://huggingface.co/datasets/allenai/WildChat/resolve/f66566ceaaeb619dd98ffb0f3bf3ce1f86775ac4/data/train-00000-of-00006.parquet",
+    "sha256": "d42159f2cc33b6c90aa5ca429aa625cff5ed7c72d6c66a64993957fa9444b48e"
+  }
+}

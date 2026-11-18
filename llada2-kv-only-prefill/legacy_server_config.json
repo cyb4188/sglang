@@ -1,0 +1,31 @@
+{
+  "model_path": "inclusionAI/LLaDA2.0-mini",
+  "trust_remote_code": true,
+  "dtype": "bfloat16",
+  "tp_size": 1,
+  "context_length": 8192,
+  "max_total_tokens": 24576,
+  "max_running_requests": 4,
+  "chunked_prefill_size": 4096,
+  "max_prefill_tokens": 4096,
+  "mem_fraction_static": 0.87,
+  "dllm_algorithm": "LowConfidence",
+  "dllm_fdfo": true,
+  "attention_backend": "flashinfer",
+  "moe_runner_backend": "triton",
+  "random_seed": 20261117,
+  "incremental_streaming_output": false,
+  "skip_server_warmup": true,
+  "log_level": "warning",
+  "cuda_graph_config": {
+    "decode": {
+      "bs": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "max_bs": 4
+    }
+  }
+}
