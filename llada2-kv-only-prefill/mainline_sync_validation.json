@@ -1,0 +1,27 @@
+{
+  "upstream_base": "c2e9301c5bd5d8d6fe72898fbb20edede62ff020",
+  "tests": [
+    {
+      "test": "test/registered/unit/dllm/test_kv_only_prefill.py",
+      "returncode": 0
+    },
+    {
+      "test": "test/registered/unit/dllm/test_low_confidence_prefill.py",
+      "returncode": 0
+    },
+    {
+      "test": "test/registered/unit/models/test_llada2.py",
+      "returncode": 0
+    }
+  ],
+  "new_eager_flags_parse": true,
+  "real_server_args_gate": true,
+  "visible_cuda_devices": 0,
+  "pr_head": "9d8e719a35f67e0009021f14e3e71e6400b9c68e",
+  "source_tree": "d25542479e02c2356a2d0913179300b47641ad6f",
+  "core_runtime_files_identical_to_gpu_measured_head": true,
+  "precommit": "all applicable hooks passed",
+  "github_lint": "https://github.com/sgl-project/sglang/actions/runs/44296058767",
+  "gpu_scope": "Serving regression and timing remain measured at d49c028f0077ca2978a682a54dc9a28efd4543de. Not rerun after the sync; the GPU is occupied by another user.",
+  "environment_scope": "CPU/CLI checks reused the original isolated environment. Fresh dependency/GPU coverage awaits upstream CI."
+}

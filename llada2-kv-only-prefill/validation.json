@@ -18,11 +18,11 @@
       "result": "1 passed; four server configurations; 340.547 seconds"
     },
     {
-      "command": "git diff --name-only 0f1509829b3920780aaea05bfc72b33db350a2e8 HEAD | xargs pre-commit run --hook-stage pre-commit --files",
+      "command": "git diff --name-only 0f1509829b3920780aaea05bfc72b33db350a2e8 d49c028f0077ca2978a682a54dc9a28efd4543de | xargs pre-commit run --hook-stage pre-commit --files",
       "result": "all applicable hooks passed on Linux"
     },
     {
-      "command": "git diff --check 0f1509829b3920780aaea05bfc72b33db350a2e8 HEAD",
+      "command": "git diff --check 0f1509829b3920780aaea05bfc72b33db350a2e8 d49c028f0077ca2978a682a54dc9a28efd4543de",
       "result": "passed"
     }
   ],
@@ -30,5 +30,7 @@
   "accuracy_scope": "Token equivalence; no task accuracy or pass@1 evaluation.",
   "no_visible_gpu_probe": "All 25 tests also passed with CUDA_VISIBLE_DEVICES=999 and torch.cuda.device_count()==0. An initial -1 setting could not start because the existing test_utils.py port-selection code parses the first character as an integer. No upstream helper was changed.",
   "token_reconstruction": "All 128 selected inputs re-tokenized to exactly the recorded token IDs with the mainline environment.",
-  "remote_lint": "Passed: https://github.com/sgl-project/sglang/actions/runs/44214690134"
+  "remote_lint": "Passed: https://github.com/sgl-project/sglang/actions/runs/44214690134",
+  "final_head_validation": "See mainline_sync_validation.json for the 9d8e719 mainline sync; GPU measurements remain pinned to d49c028.",
+  "synced_precommit_command": "git diff --name-only c2e9301c5bd5d8d6fe72898fbb20edede62ff020 9d8e719a35f67e0009021f14e3e71e6400b9c68e | xargs pre-commit run --hook-stage pre-commit --files"
 }

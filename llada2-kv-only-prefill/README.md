@@ -4,7 +4,9 @@ Supporting material for [SGLang PR #51122](https://github.com/sgl-project/sglang
 
 ## Versions and interpretation
 
-The submitted change is based on upstream `0f1509829b3920780aaea05bfc72b33db350a2e8`, with [#48647](https://github.com/sgl-project/sglang/pull/48647) as a prerequisite. The feature commit is `d49c028f0077ca2978a682a54dc9a28efd4543de` and its source tree is `622403fda69e38539aa09be04f304ee33dd5b625`.
+The GPU-measured change is based on upstream `0f1509829b3920780aaea05bfc72b33db350a2e8`, with [#48647](https://github.com/sgl-project/sglang/pull/48647) as a prerequisite. The measured feature commit is `d49c028f0077ca2978a682a54dc9a28efd4543de` and its source tree is `622403fda69e38539aa09be04f304ee33dd5b625`.
+
+The final PR head `9d8e719a35f67e0009021f14e3e71e6400b9c68e` additionally merges upstream `c2e9301c5bd5d8d6fe72898fbb20edede62ff020`; its tree is `d25542479e02c2356a2d0913179300b47641ad6f`. This resolves removal of adjacent deprecated environment variables and replaces the serving test's removed eager CLI alias with separate prefill/decode switches. The core KV-only implementation files are byte-identical to the measured head. On the merged source, 25 unit tests, real ServerArgs eligibility, new CLI parsing, and pre-commit passed; GitHub Lint passed as well. See `mainline_sync_validation.json`. The CPU/CLI checks reused the original isolated environment; GPU regression and timing were not rerun after this sync because the GPU was occupied. Upstream CI still needs to provide fresh dependency/GPU coverage.
 
 `legacy_*` files describe a **SGLang 0.5.17 prototype**, Torch 2.11.0+cu128 and FlashInfer 0.6.15.post1. They are not timings for the submitted mainline patch. This earlier experiment used one A-B-C traversal, without independent repetitions. Its very small full-dataset end-to-end differences should not be treated as a stable speedup.
 
